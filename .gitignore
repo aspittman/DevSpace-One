@@ -1,0 +1,193 @@
+# Python
+
+**pycache**/
+*.py[cod]
+*$py.class
+
+# C Extensions
+
+*.so
+
+# Distribution / Packaging
+
+.Python
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables
+
+.env
+.env.*
+!.env.example
+
+# Logs
+
+*.log
+logs/
+log/
+bot.log
+debug.log
+
+# Runtime Files
+
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage / Testing
+
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+hypothesis/
+
+# Jupyter
+
+.ipynb_checkpoints/
+
+# IDEs
+
+.vscode/
+.idea/
+*.iml
+
+# Sublime
+
+*.sublime-project
+*.sublime-workspace
+
+# OS Files
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Data Files
+
+data/*.csv
+data/*.xlsx
+data/*.xls
+data/*.json
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
+# Generated Reports
+
+reports/
+exports/
+
+# Scraped Content
+
+scraped/
+downloads/
+
+# Temporary Files
+
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Secrets
+
+secrets/
+credentials/
+apikeys/
+service_account.json
+google_credentials.json
+
+# Docker
+
+.docker/
+docker-compose.override.yml
+
+# Local Config
+
+config.local.yaml
+config.local.yml
+settings.local.json
+
+# AI / Models
+
+models/
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.onnx
+
+# Node (if helper tools are added later)
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build Artifacts
+
+build_output/
+artifacts/
+
+# CRM Sync Dumps
+
+crm_exports/
+crm_backups/
+
+# Email Cache
+
+email_cache/
+smtp_cache/
+
+# Bot State
+
+state/
+cache/
+
+# Runtime Databases
+
+*.db
+*.sqlite
+*.sqlite3
+
+# PyInstaller
+
+*.manifest
+*.spec
+
+# Local Test Files
+
+test_output/
+sandbox/
+
+# GitHub
+
+.github/workflows/*.local.yml
