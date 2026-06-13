@@ -1,5 +1,7 @@
 import argparse
 
+from services.afternic_sync.runner import run as run_afternic_sync
+from services.apollo_outreach.runner import run as run_apollo_outreach
 from services.apollo_outreach.runner import run as run_apollo
 from services.brazilian_lemonade_scout.runner import run as run_brazilian_lemonade
 from services.devspace_outreach.runner import run as run_devspace
@@ -7,6 +9,9 @@ from services.domain_merchant.runner import run as run_merchant
 from services.microgreen_scout.runner import run as run_microgreen_scout
 from services.snowcone_scout.runner import run as run_snowcone_scout
 
+# When routing services to apollo outreach add below code
+# if service == "apollo_outreach":
+#     run_apollo_outreach(niche=niche)
 
 def main():
     parser = argparse.ArgumentParser()
