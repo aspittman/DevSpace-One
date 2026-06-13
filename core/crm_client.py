@@ -44,3 +44,23 @@ class CRMClient:
         response = requests.post(url, json=payload, headers=self.headers(), timeout=30)
         response.raise_for_status()
         return response.json()
+
+    def register_service(self, client_slug, service_key, service_name, niche=None):
+        url = f"{self.base_url}/api/bot/register-service"
+
+        payload = {
+            "client_slug": client_slug,
+            "service_key": service_key,
+            "service_name": service_name,
+            "niche": niche,
+        }
+
+        response = requests.post(
+            url,
+            json=payload,
+            headers=self.headers(),
+            timeout=30,
+        )
+
+        response.raise_for_status()
+        return response.json()
