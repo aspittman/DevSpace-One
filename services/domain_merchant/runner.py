@@ -26,7 +26,7 @@ def decide_action(result: dict) -> str:
     return "SKIP"
 
 
-def run(niche: str | None = None):
+def run(organization_id: str, niche: str | None = None, signals=None, config=None):
     niche = niche or "loans"
 
     organization_id = os.getenv("DOMAIN_MERCHANT_ORG_ID")

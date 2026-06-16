@@ -1,39 +1,37 @@
-import argparse
-
-from services.afternic_sync.runner import run as run_afternic_sync
+from core.crm_client import CRMClient
+from services.domain_merchant.runner import run as run_domain_merchant
 from services.apollo_outreach.runner import run as run_apollo_outreach
-from services.apollo_outreach.runner import run as run_apollo
-from services.brazilian_lemonade_scout.runner import run as run_brazilian_lemonade
-from services.devspace_outreach.runner import run as run_devspace
-from services.domain_merchant.runner import run as run_merchant
-from services.microgreen_scout.runner import run as run_microgreen_scout
-from services.snowcone_scout.runner import run as run_snowcone_scout
 
-# When routing services to apollo outreach add below code
-# if service == "apollo_outreach":
-#     run_apollo_outreach(niche=niche)
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--service", required=True)
-    parser.add_argument("--niche", required=False)
-    args = parser.parse_args()
+    crm = CRMClient()
 
-    if args.service == "apollo_outreach":
-        run_apollo()
-    elif args.service == "devspace_outreach":
-        run_devspace(niche=args.niche)
-    elif args.service == "brazilian_lemonade_scout":
-        run_brazilian_lemonade()
-    elif args.service == "microgreen_scout":
-        run_microgreen_scout()
-    elif args.service == "domain_merchant":
-        run_merchant(niche=args.niche)
-    elif args.service == "snowcone_scout":
-        run_snowcone_scout()
-    else:
-        raise ValueError(f"Unknown service: {args.service}")
+    response = crm.get_enabled_services()
+    services = response.get("services", [])
 
+    for service in services:
+        service_key = service["service_key"]
+        organization_id = service["organization_id"]
+        niche = service.get("niche")
 
-if __name__ == "__main__":
-    main()
+        print(f"Running {service_key} for {organization_id}")
+
+        if service_key == "domain_merchant":
+            signals = crm.get_domain_signals(
+                organization_id=organization_id,
+                niche=niche,
+            )
+
+            run_domain_merchant(
+                organization_id=organization_id,
+                niche=niche,
+                signals=signals,
+                config=service.get("config_json", {}),
+            )
+
+        elif service_key == "apollo_outreach":
+            run_apollo_outreach(
+                organization_id=organization_id,
+                niche=niche,
+                config=service.get("config_json", {}),
+            )

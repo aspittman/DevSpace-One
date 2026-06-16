@@ -16,6 +16,39 @@ class CRMClient:
         if not self.api_key:
             raise ValueError("CRM_BOT_API_KEY is missing")
 
+    def get_enabled_services(self):
+        return self._get("/api/bot/enabled-services")
+
+
+    def get_service_config(self, organization_id, service_key, niche=None):
+        params = {
+            "organization_id": organization_id,
+            "service_key": service_key,
+        }
+
+        if niche:
+            params["niche"] = niche
+
+        return self._get("/api/bot/service-config", params=params)
+
+
+    def get_domain_signals(self, organization_id, niche=None):
+        params = {"organization_id": organization_id}
+
+        if niche:
+            params["niche"] = niche
+
+        return self._get("/api/bot/domain-signals", params=params)
+
+
+    def get_outreach_performance(self, organization_id, domain=None):
+        params = {"organization_id": organization_id}
+
+        if domain:
+            params["domain"] = domain
+
+        return self._get("/api/bot/outreach-performance", params=params)
+
     def headers(self):
         return {
             "Authorization": f"Bearer {self.api_key}",
@@ -27,6 +60,7 @@ class CRMClient:
         response = requests.post(url, json=payload, headers=self.headers(), timeout=30)
         response.raise_for_status()
         return response.json()
+
 
     def get_strategy(self, lead_id: str):
         url = f"{self.base_url}/api/bot/strategy"

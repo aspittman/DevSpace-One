@@ -31,7 +31,7 @@ def best_domain_match(lead: dict, domains: list[dict]):
     return best_domain, best_score, best_reasons
 
 
-def run(niche: str = "loans"):
+def run(organization_id: str, niche: str | None = None, signals=None, config=None):
     organization_id = os.getenv("APOLLO_OUTREACH_ORG_ID")
 
     if not organization_id:

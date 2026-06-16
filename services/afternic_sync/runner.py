@@ -10,7 +10,7 @@ from services.afternic_sync.adapter import afternic_result_to_crm_payload
 AFTERNIC_FILE = Path("data/afternic/afternic_export.csv")
 
 
-def run():
+def run(organization_id: str, niche: str | None = None, signals=None, config=None):
     organization_id = os.getenv("DOMAIN_MERCHANT_ORG_ID")
 
     if not organization_id:
