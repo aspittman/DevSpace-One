@@ -1,7 +1,9 @@
 from core.crm_client import CRMClient
 from services.domain_merchant.runner import run as run_domain_merchant
 from services.apollo_outreach.runner import run as run_apollo_outreach
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def main():
     crm = CRMClient()
@@ -35,3 +37,6 @@ def main():
                 niche=niche,
                 config=service.get("config_json", {}),
             )
+
+if __name__ == "__main__":
+    main()

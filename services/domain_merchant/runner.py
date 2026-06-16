@@ -5,6 +5,7 @@ from services.domain_merchant.adapter import domain_result_to_crm_payload
 from services.domain_merchant.config import MAX_ALERTS_OR_INGESTS
 from services.domain_merchant.scorer import score_domain
 from services.domain_merchant.sources import generate_domains_for_niche
+from services.domain_merchant.notifier import send_domain_alert
 
 
 def decide_action(result: dict) -> str:
@@ -29,7 +30,7 @@ def decide_action(result: dict) -> str:
 def run(organization_id: str, niche: str | None = None, signals=None, config=None):
     niche = niche or "loans"
 
-    organization_id = os.getenv("DOMAIN_MERCHANT_ORG_ID")
+    organization_id = organization_id or os.getenv("DOMAIN_MERCHANT_ORG_ID")
 
     if not organization_id:
         raise ValueError("DOMAIN_MERCHANT_ORG_ID is missing from .env")
@@ -63,6 +64,8 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
     print(f"Buy candidates found: {len(buy_candidates)}")
     print(f"Sending to CRM: {len(selected)}")
 
+    sent_to_crm = 0
+
     for result in selected:
         payload = domain_result_to_crm_payload(
             result=result,
@@ -70,9 +73,16 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
         )
 
         crm.ingest_lead(payload)
+        sent_to_crm += 1
 
         print(
             f"Sent to CRM: {result['domain']} "
             f"| Score: {result['score']} "
             f"| Target: ${result['target_price']}"
         )
+
+    if selected:
+        send_domain_alert(selected)
+        print(f"Email alert sent for {len(selected)} domains.")
+    else:
+        print("No email sent because no domains were selected.")

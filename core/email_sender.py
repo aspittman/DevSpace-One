@@ -1,28 +1,45 @@
 import os
 import smtplib
 from email.message import EmailMessage
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 def send_email(to_email: str, subject: str, body: str):
-    if os.getenv("EMAIL_ENABLED", "false").lower() != "true":
+    email_enabled = os.getenv("EMAIL_ENABLED", "false").lower() == "true"
+
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_USERNAME")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    from_name = os.getenv("FROM_NAME", "DevSpace One")
+
+    if not email_enabled:
         print("EMAIL DISABLED - Preview only")
-        print("TO:", to_email)
-        print("SUBJECT:", subject)
+        print(f"To: {to_email}")
+        print(f"Subject: {subject}")
         print(body)
-        return {"sent": False, "preview": True}
+        return False
+
+    if not smtp_user:
+        raise ValueError("SMTP_USER or SMTP_USERNAME is missing")
+
+    if not smtp_password:
+        raise ValueError("SMTP_PASSWORD is missing")
+
+    if not to_email:
+        raise ValueError("ALERT_TO_EMAIL / to_email is missing")
 
     msg = EmailMessage()
-    msg["From"] = os.getenv("SMTP_USER")
+    msg["From"] = f"{from_name} <{smtp_user}>"
     msg["To"] = to_email
     msg["Subject"] = subject
     msg.set_content(body)
 
-    with smtplib.SMTP(os.getenv("SMTP_HOST"), int(os.getenv("SMTP_PORT", "587"))) as server:
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
+        server.ehlo()
         server.starttls()
-        server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASSWORD"))
+        server.ehlo()
+        server.login(smtp_user, smtp_password)
         server.send_message(msg)
 
-    return {"sent": True}
+    print(f"Email sent to {to_email}")
+    return True
