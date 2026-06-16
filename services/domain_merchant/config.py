@@ -1,6 +1,6 @@
 MIN_BUY_SCORE = 75
 MIN_REVIEW_SCORE = 45
-MAX_ALERTS_OR_INGESTS = 3
+MAX_ALERTS_OR_INGESTS = 5
 
 STATE_TERMS = [
     "utah", "arizona", "colorado", "nevada", "texas", "florida",

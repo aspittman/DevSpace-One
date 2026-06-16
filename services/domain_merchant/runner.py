@@ -57,7 +57,24 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
 
     buy_candidates.sort(key=lambda x: x["score"], reverse=True)
 
-    selected = buy_candidates[:MAX_ALERTS_OR_INGESTS]
+    selected = []
+
+    for result in buy_candidates:
+        domain = result["domain"]
+
+        exists_response = crm.domain_exists(
+            organization_id=organization_id,
+            domain=domain,
+        )
+
+        if exists_response.get("exists"):
+            print(f"Skipping duplicate domain: {domain}")
+            continue
+
+        selected.append(result)
+
+        if len(selected) >= MAX_ALERTS_OR_INGESTS:
+            break
 
     print(f"Domain Merchant niche: {niche}")
     print(f"Candidates scanned: {len(candidates)}")
