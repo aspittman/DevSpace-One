@@ -13,6 +13,8 @@ def outreach_result_to_crm_payload(
     last_name = lead.get("last_name") or lead.get("Last Name") or ""
     email = lead.get("email") or lead.get("Email") or ""
     title = lead.get("title") or lead.get("Title") or ""
+    domain = domain_offer["domain"]
+    ask_price = domain_offer.get("ask_price")
 
     return {
         "organization_id": organization_id,
@@ -20,25 +22,38 @@ def outreach_result_to_crm_payload(
         "company": {
             "name": company_name,
             "website": website,
-            "industry": "loans",
+            "domain": website,
+            "industry": domain_offer.get("niche") or "loans",
         },
         "contact": {
             "first_name": first_name,
             "last_name": last_name,
             "email": email,
             "role": title,
+            "linkedin_url": lead.get("linkedin_url") or "",
         },
         "lead": {
-            "title": f"{company_name} - buyer lead for {domain_offer['domain']}",
+            "lead_type": "domain_buyer_outreach",
+            "title": f"{company_name} - buyer lead for {domain}",
             "status": "drafted",
             "score": score,
+            "summary": f"Drafted outreach to {company_name} for {domain}",
             "notes": "; ".join(reasons),
-            "metadata": {
-                "domain": domain_offer["domain"],
-                "ask_price": domain_offer.get("ask_price"),
-                "email_subject": subject,
-                "email_body": body,
-                "apollo_score_reasons": reasons,
-            },
+            "pain_points": reasons,
+        },
+        "metadata": {
+            "domain": domain,
+            "ask_price": ask_price,
+            "outreach_status": "drafted",
+            "outcome": "pending",
+            "purchase_intent": None,
+            "response_status": None,
+            "email_subject": subject,
+            "email_body": body,
+            "apollo_score_reasons": reasons,
+            "apollo_person_id": lead.get("apollo_person_id"),
+            "apollo_organization_id": lead.get("apollo_organization_id"),
+            "apollo_email_status": lead.get("email_status"),
+            "apollo_raw": lead.get("apollo_raw"),
         },
     }

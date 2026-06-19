@@ -85,6 +85,26 @@ def normalize_afternic_row(row: dict) -> dict:
     )
 
     views = get_field(row, "views", "Views", "Search Views", "Impressions")
+    purchase_price = money_to_float(
+        get_field(
+            row,
+            "purchase price",
+            "Purchase Price",
+            "Acquisition Cost",
+            "Cost",
+            "Bought For",
+        )
+    )
+    purchase_date = parse_date(
+        get_field(
+            row,
+            "purchase date",
+            "Purchase Date",
+            "Acquired Date",
+            "Date Bought",
+        )
+    )
+    registrar = get_field(row, "registrar", "Registrar", "Purchased From", "Source")
 
     try:
         views = int(str(views).replace(",", "")) if views else None
@@ -107,10 +127,49 @@ def normalize_afternic_row(row: dict) -> dict:
         "status": status,
         "outcome": outcome,
         "sale_price": sale_price,
+        "purchase_price": purchase_price,
+        "purchase_date": purchase_date,
+        "registrar": registrar,
         "list_price": list_price,
         "floor_price": floor_price,
         "sale_date": sale_date,
         "listed_date": listed_date,
         "views": views,
+        "raw": row,
+    }
+
+
+def normalize_domain_purchase_row(row: dict) -> dict:
+    domain = lower(get_field(row, "domain", "Domain", "Domain Name", "name"))
+    purchase_price = money_to_float(
+        get_field(
+            row,
+            "purchase price",
+            "Purchase Price",
+            "Acquisition Cost",
+            "Cost",
+            "Bought For",
+        )
+    )
+    purchase_date = parse_date(
+        get_field(
+            row,
+            "purchase date",
+            "Purchase Date",
+            "Acquired Date",
+            "Date Bought",
+        )
+    )
+    registrar = get_field(row, "registrar", "Registrar", "Purchased From", "Source")
+    notes = get_field(row, "notes", "Notes", "Reason", "Strategy")
+
+    return {
+        "domain": domain,
+        "status": "purchased",
+        "outcome": "purchased",
+        "purchase_price": purchase_price,
+        "purchase_date": purchase_date,
+        "registrar": registrar,
+        "notes": notes,
         "raw": row,
     }

@@ -54,6 +54,15 @@ class CRMClient:
     def ingest_lead(self, payload):
         return self._post("/api/ingest", payload)
 
+    def domain_exists(self, organization_id, domain):
+        return self._get(
+            "/api/bot/domain-exists",
+            params={
+                "organization_id": organization_id,
+                "domain": domain,
+            },
+        )
+
     def get_enabled_services(self):
         return self._get("/api/bot/enabled-services")
 

@@ -3,6 +3,10 @@ import os
 from core.crm_client import CRMClient
 from services.domain_merchant.adapter import domain_result_to_crm_payload
 from services.domain_merchant.config import MAX_ALERTS_OR_INGESTS
+from services.domain_merchant.performance import (
+    apply_performance_adjustments,
+    summarize_performance,
+)
 from services.domain_merchant.scorer import score_domain
 from services.domain_merchant.sources import generate_domains_for_niche
 from services.domain_merchant.notifier import send_domain_alert
@@ -36,6 +40,28 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
         raise ValueError("DOMAIN_MERCHANT_ORG_ID is missing from .env")
 
     crm = CRMClient()
+    feedback_enabled = str((config or {}).get("feedback_enabled", "true")).lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
+    performance_summary = None
+
+    if feedback_enabled:
+        try:
+            performance_summary = summarize_performance(
+                crm.get_outreach_performance(
+                    organization_id=organization_id,
+                ),
+                niche=niche,
+            )
+            print(
+                "Domain Merchant feedback rows: "
+                f"{performance_summary.get('rows', 0)}"
+            )
+        except Exception as exc:
+            print(f"Domain Merchant feedback unavailable: {exc}")
 
     candidates = generate_domains_for_niche(niche=niche, limit=250)
 
@@ -45,6 +71,8 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
         domain = item["domain"]
 
         scored = score_domain(domain=domain, niche=niche)
+        scored["base_score"] = scored["score"]
+        scored = apply_performance_adjustments(scored, performance_summary)
         scored["source"] = item["source"]
         scored["action"] = decide_action(scored)
 
@@ -95,6 +123,7 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
         print(
             f"Sent to CRM: {result['domain']} "
             f"| Score: {result['score']} "
+            f"| Feedback: {result.get('performance_score_adjustment', 0)} "
             f"| Target: ${result['target_price']}"
         )
 
