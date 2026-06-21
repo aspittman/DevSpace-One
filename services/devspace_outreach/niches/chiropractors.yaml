@@ -1,0 +1,86 @@
+key: chiropractors
+label: Chiropractors
+
+search:
+  queries:
+    - 'chiropractor "{location}" website'
+    - 'chiropractic clinic "{location}" website'
+    - 'back pain chiropractor "{location}" website'
+    - 'neck pain chiropractor "{location}" website'
+    - 'sports chiropractor "{location}" website'
+    - 'family chiropractor "{location}" website'
+
+locations:
+  - Salt Lake City UT
+  - Provo UT
+  - Orem UT
+  - Sandy UT
+  - Draper UT
+  - Ogden UT
+
+pain_points:
+  - key: slow_mobile_site
+    label: Slow mobile site
+    weight: 25
+    scan_for:
+      - low_mobile_pagespeed
+      - large_images
+      - render_blocking_scripts
+
+  - key: weak_local_seo
+    label: Weak local SEO
+    weight: 25
+    scan_for:
+      - missing_city_keywords
+      - weak_title_tag
+      - missing_meta_description
+      - missing_schema_markup
+
+  - key: poor_conversion
+    label: Poor appointment conversion
+    weight: 25
+    scan_for:
+      - no_online_booking
+      - phone_number_not_prominent
+      - weak_call_to_action
+      - contact_form_hard_to_find
+
+  - key: low_trust
+    label: Low trust signals
+    weight: 15
+    scan_for:
+      - missing_reviews
+      - no_testimonials
+      - no_doctor_bio
+      - no_before_after_or_patient_success_content
+
+  - key: technical_issues
+    label: Technical website issues
+    weight: 10
+    scan_for:
+      - broken_links
+      - missing_ssl
+      - mobile_layout_issues
+      - outdated_cms_signals
+
+offer:
+  primary_service: Website performance and local SEO audit
+  pitch_angle: >
+    Chiropractors rely heavily on local search and mobile visitors.
+    If the site is slow, hard to navigate, or missing local SEO basics,
+    it can quietly cost appointment requests.
+
+scoring:
+  min_score_to_save: 60
+  min_score_to_email: 80
+
+email:
+  subject: "Quick website note for {company_name}"
+  opening: >
+    I was looking at chiropractic websites around {location} and noticed a few
+    things on {company_name}'s site that may be worth tightening up.
+  value_prop: >
+    The main things I look for are mobile speed, local SEO, appointment friction,
+    and whether the site makes it easy for someone with back or neck pain to book.
+  call_to_action: >
+    Would you be open to me sending over a quick summary of what I found?

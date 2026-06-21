@@ -2,6 +2,7 @@ from core.crm_client import CRMClient
 from services.domain_merchant.runner import run as run_domain_merchant
 from services.apollo_outreach.runner import run as run_apollo_outreach
 from services.afternic_sync.runner import run as run_afternic_sync
+from services.devspace_outreach.runner import run as run_devspace_outreach
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -49,6 +50,19 @@ def main():
             run_afternic_sync(
                 organization_id=organization_id,
                 niche=niche,
+                config=service.get("config_json", {}),
+            )
+
+        elif service_key == "devspace_outreach":
+            signals = crm.get_domain_signals(
+                organization_id=organization_id,
+                niche=niche,
+            )
+
+            run_devspace_outreach(
+                organization_id=organization_id,
+                niche=niche,
+                signals=signals,
                 config=service.get("config_json", {}),
             )
 
