@@ -1,3 +1,4 @@
+import csv
 import os
 from pathlib import Path
 
@@ -94,6 +95,75 @@ def _domain_from_signal(signal: dict) -> dict | None:
     }
 
 
+def _domain_offer_from_row(row: dict) -> dict | None:
+    domain = str(row.get("domain") or row.get("name") or "").strip()
+
+    if not domain:
+        return None
+
+    return {
+        "domain": domain,
+        "ask_price": (
+            row.get("ask_price")
+            or row.get("target_price")
+            or row.get("list_price")
+            or row.get("price")
+        ),
+        "niche": row.get("niche"),
+    }
+
+
+def read_domain_offers_csv(path) -> list[dict]:
+    path = Path(path)
+
+    if not path.exists():
+        return []
+
+    with open(path, newline="", encoding="utf-8") as file:
+        rows = list(csv.reader(file))
+
+    rows = [
+        [cell.strip() for cell in row]
+        for row in rows
+        if any(cell.strip() for cell in row)
+    ]
+
+    if not rows:
+        return []
+
+    first_cell = rows[0][0].lower()
+    has_header = first_cell in {"domain", "name"} or "domain" in [cell.lower() for cell in rows[0]]
+
+    if has_header:
+        header = rows[0]
+        offers = []
+
+        for row in rows[1:]:
+            data = {
+                header[index]: row[index]
+                for index in range(min(len(header), len(row)))
+            }
+            offer = _domain_offer_from_row(data)
+
+            if offer:
+                offers.append(offer)
+
+        return offers
+
+    offers = []
+
+    for row in rows:
+        offer = _domain_offer_from_row({
+            "domain": row[0] if len(row) > 0 else "",
+            "ask_price": row[1] if len(row) > 1 else "",
+        })
+
+        if offer:
+            offers.append(offer)
+
+    return offers
+
+
 def load_domain_offers(signals=None, config=None) -> list[dict]:
     config = config or {}
 
@@ -107,9 +177,15 @@ def load_domain_offers(signals=None, config=None) -> list[dict]:
 
         for item in configured_domains:
             if isinstance(item, str):
-                offers.append({"domain": item})
-            elif isinstance(item, dict) and item.get("domain"):
-                offers.append(item)
+                offer = _domain_offer_from_row({"domain": item})
+
+                if offer:
+                    offers.append(offer)
+            elif isinstance(item, dict):
+                offer = _domain_offer_from_row(item)
+
+                if offer:
+                    offers.append(offer)
 
         return offers
 
@@ -134,7 +210,7 @@ def load_domain_offers(signals=None, config=None) -> list[dict]:
     if offers:
         return offers
 
-    return read_csv(DOMAINS_FILE)
+    return read_domain_offers_csv(DOMAINS_FILE)
 
 
 def apollo_search_keywords(domains: list[dict], config: dict) -> list[str]:
@@ -200,6 +276,15 @@ def lead_key(lead: dict) -> str:
     ])
 
 
+def lead_email(lead: dict) -> str:
+    email = str(lead.get("email") or lead.get("Email") or "").strip()
+
+    if "@" not in email or "." not in email.rsplit("@", 1)[-1]:
+        return ""
+
+    return email
+
+
 def run(organization_id: str, niche: str | None = None, signals=None, config=None):
     config = config or {}
     organization_id = organization_id or os.getenv("APOLLO_OUTREACH_ORG_ID")
@@ -236,10 +321,17 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
     scored_rows = []
     draft_rows = []
     seen_leads = set()
+    skipped_without_email = 0
     minimum_score = int(config.get("minimum_score", 50))
     max_ingests = int(config.get("max_ingests", 50))
 
     for lead in leads:
+        email = lead_email(lead)
+
+        if not email:
+            skipped_without_email += 1
+            continue
+
         key = lead_key(lead)
 
         if key in seen_leads:
@@ -264,7 +356,7 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
             "first_name": lead.get("first_name", lead.get("First Name", "")),
             "last_name": lead.get("last_name", lead.get("Last Name", "")),
             "title": lead.get("title", lead.get("Title", "")),
-            "email": lead.get("email", lead.get("Email", "")),
+            "email": email,
             "website": lead.get("website", lead.get("Website", "")),
             "reasons": "; ".join(reasons),
         })
@@ -272,7 +364,7 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
         draft_rows.append({
             "score": score,
             "domain": domain_offer["domain"],
-            "to_email": lead.get("email", lead.get("Email", "")),
+            "to_email": email,
             "company": lead.get("company", lead.get("Company", "")),
             "subject": subject,
             "body": body,
@@ -328,4 +420,5 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
     print(f"Scored leads saved to {SCORED_OUTPUT}")
     print(f"Email drafts saved to {DRAFTS_OUTPUT}")
     print(f"Sent {len(scored_rows)} Apollo Outreach leads to CRM")
+    print(f"Skipped {skipped_without_email} Apollo leads without a valid email")
     print(f"Synced {responses_synced} Apollo Outreach responses to CRM")

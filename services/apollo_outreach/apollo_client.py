@@ -5,6 +5,7 @@ import requests
 
 
 DEFAULT_APOLLO_BASE_URL = "https://api.apollo.io/api/v1"
+PEOPLE_SEARCH_PATH = "/mixed_people/api_search"
 
 
 class ApolloClient:
@@ -67,7 +68,7 @@ class ApolloClient:
                     "per_page": per_page,
                 }
 
-                response = self._post("/mixed_people/search", payload)
+                response = self._post(PEOPLE_SEARCH_PATH, payload)
                 batch = response.get("people") or response.get("contacts") or []
 
                 if not batch:
