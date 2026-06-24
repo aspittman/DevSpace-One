@@ -120,7 +120,7 @@ def _provider(config: dict) -> str:
     ):
         return "google_cse"
 
-    if config.get("serpapi_key") or os.getenv("SERPAPI_API_KEY"):
+    if config.get("serpapi_key") or os.getenv("SERPAPI_API_KEY") or os.getenv("SERP_API_KEY"):
         return "serpapi"
 
     return "disabled"
@@ -183,10 +183,10 @@ def _google_cse_search(query: str, count: int, config: dict) -> list[dict]:
 
 
 def _serpapi_search(query: str, count: int, config: dict) -> list[dict]:
-    api_key = config.get("serpapi_key") or os.getenv("SERPAPI_API_KEY")
+    api_key = config.get("serpapi_key") or os.getenv("SERPAPI_API_KEY") or os.getenv("SERP_API_KEY")
 
     if not api_key:
-        raise ValueError("SERPAPI_API_KEY is missing")
+        raise ValueError("SERPAPI_API_KEY or SERP_API_KEY is missing")
 
     response = requests.get(
         "https://serpapi.com/search.json",

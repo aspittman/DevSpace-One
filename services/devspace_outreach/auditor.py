@@ -30,6 +30,37 @@ CMS_MARKERS = (
     "squarespace",
     "weebly",
 )
+LOCATION_TERMS = (
+    "areas served",
+    "service area",
+    "serving",
+    "nearby",
+)
+MAP_TERMS = (
+    "google maps",
+    "maps.google.com",
+    "google.com/maps",
+)
+INSURANCE_TERMS = (
+    "insurance",
+    "insured",
+    "coverage",
+    "medicare",
+)
+CERTIFICATION_TERMS = (
+    "certified",
+    "certification",
+    "licensed",
+    "license",
+)
+CONDITION_TERMS = (
+    "back pain",
+    "neck pain",
+    "sports injury",
+    "auto accident",
+    "sciatica",
+    "headache",
+)
 
 
 class PageParser(HTMLParser):
@@ -123,6 +154,29 @@ def fetch_homepage(url: str, config: dict) -> tuple[str, str, float, int]:
     return response.url, response.text, elapsed_ms, len(response.content)
 
 
+def resource_exists(base_url: str, path: str, config: dict) -> bool:
+    parsed = urlparse(base_url)
+    url = f"{parsed.scheme}://{parsed.netloc}{path}"
+    timeout = int(config.get("resource_check_timeout", 8))
+
+    try:
+        response = requests.get(
+            url,
+            headers={
+                "User-Agent": config.get(
+                    "user_agent",
+                    "Mozilla/5.0 (compatible; DevspaceOutreachBot/1.0)",
+                )
+            },
+            timeout=timeout,
+            allow_redirects=True,
+        )
+    except requests.RequestException:
+        return False
+
+    return response.status_code < 400 and bool(response.text.strip())
+
+
 def city_from_location(location: str) -> str:
     return (location or "").split(",")[0].split(" UT")[0].split(" CO")[0].strip()
 
@@ -180,15 +234,31 @@ def audit_website(prospect: dict, config: dict) -> dict:
         image for image in parser.images
         if image.get("src") and (not image.get("width") or not image.get("height"))
     ]
+    images_missing_alt = [
+        image for image in parser.images
+        if image.get("src") and not image.get("alt")
+    ]
 
     if elapsed_ms >= int(config.get("slow_response_ms", 2500)):
         audit["issues"].append("low_mobile_pagespeed")
 
+    if elapsed_ms >= int(config.get("poor_lcp_ms", 4000)):
+        audit["issues"].append("poor_lcp")
+
     if page_bytes >= int(config.get("large_page_bytes", 1500000)) or len(missing_image_dimensions) >= int(config.get("large_image_count", 12)):
         audit["issues"].append("large_images")
 
+    if len(missing_image_dimensions) >= int(config.get("poor_cls_image_count", 4)):
+        audit["issues"].append("poor_cls")
+
     if len(blocking_scripts) >= int(config.get("render_blocking_script_count", 6)):
         audit["issues"].append("render_blocking_scripts")
+
+    if len(parser.scripts) >= int(config.get("unused_javascript_script_count", 20)):
+        audit["issues"].append("unused_javascript")
+
+    if len(images_missing_alt) >= int(config.get("accessibility_missing_alt_count", 3)):
+        audit["issues"].append("accessibility_issues")
 
     if city and city.lower() not in f"{title} {description} {text[:3000]}".lower():
         audit["issues"].append("missing_city_keywords")
@@ -201,12 +271,30 @@ def audit_website(prospect: dict, config: dict) -> dict:
 
     if not parser.schema:
         audit["issues"].append("missing_schema_markup")
+        audit["issues"].append("missing_localbusiness_schema")
+        audit["issues"].append("missing_chiropractor_schema")
+
+    if not has_any(html, MAP_TERMS):
+        audit["issues"].append("missing_google_map")
+
+    if not has_any(text, LOCATION_TERMS):
+        audit["issues"].append("no_location_page")
+        audit["issues"].append("no_service_area_terms")
 
     if not has_any(text, BOOKING_TERMS) and not any("appointment" in link.lower() or "book" in link.lower() for link in parser.links):
         audit["issues"].append("no_online_booking")
 
     if not phone_number_is_prominent(parser, first_screen):
         audit["issues"].append("phone_number_not_prominent")
+
+    if not parser.phone_links:
+        audit["issues"].append("no_click_to_call_on_mobile")
+
+    if not any("tel:" in link.lower() or "appointment" in link.lower() or "book" in link.lower() for link in parser.links[:8]):
+        audit["issues"].append("no_sticky_mobile_cta")
+
+    if not has_any(first_screen, BOOKING_TERMS):
+        audit["issues"].append("appointment_button_below_fold")
 
     if not has_any(first_screen, CTA_TERMS):
         audit["issues"].append("weak_call_to_action")
@@ -225,12 +313,28 @@ def audit_website(prospect: dict, config: dict) -> dict:
 
     if not has_any(text, ("success story", "case study", "patient story", "before and after")):
         audit["issues"].append("no_before_after_or_patient_success_content")
+        audit["issues"].append("no_patient_success_content")
+
+    if not has_any(text, INSURANCE_TERMS):
+        audit["issues"].append("no_insurance_info")
+
+    if not has_any(text, CERTIFICATION_TERMS):
+        audit["issues"].append("no_certifications")
+
+    if not has_any(text, CONDITION_TERMS):
+        audit["issues"].append("no_conditions_treated_content")
 
     if "viewport" not in parser.meta:
         audit["issues"].append("mobile_layout_issues")
 
     if any(marker in html.lower() for marker in CMS_MARKERS) and "generator" in parser.meta:
         audit["issues"].append("outdated_cms_signals")
+
+    if not resource_exists(final_url, "/sitemap.xml", config):
+        audit["issues"].append("missing_sitemap")
+
+    if not resource_exists(final_url, "/robots.txt", config):
+        audit["issues"].append("missing_robots_txt")
 
     audit.update({
         "audit_status": "completed",

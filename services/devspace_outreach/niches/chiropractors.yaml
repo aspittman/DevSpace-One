@@ -1,6 +1,12 @@
 key: chiropractors
 label: Chiropractors
 
+business_model:
+  primary_goal: Generate appointment requests
+  secondary_goal: Rank locally for pain-related searches
+  target_customer: People with back pain, neck pain, injuries, or mobility problems
+  buying_intent: High when visitor is searching by city, pain type, or treatment type
+
 search:
   queries:
     - 'chiropractor "{location}" website'
@@ -8,6 +14,7 @@ search:
     - 'back pain chiropractor "{location}" website'
     - 'neck pain chiropractor "{location}" website'
     - 'sports chiropractor "{location}" website'
+    - 'auto accident chiropractor "{location}" website'
     - 'family chiropractor "{location}" website'
 
 locations:
@@ -18,32 +25,75 @@ locations:
   - Draper UT
   - Ogden UT
 
-pain_points:
-  - key: slow_mobile_site
-    label: Slow mobile site
-    weight: 25
-    scan_for:
-      - low_mobile_pagespeed
-      - large_images
-      - render_blocking_scripts
+important_keywords:
+  - chiropractor
+  - chiropractic clinic
+  - back pain
+  - neck pain
+  - auto accident
+  - sports injury
+  - spinal decompression
+  - massage therapy
+  - wellness
 
+high_value_services:
+  - auto accident treatment
+  - sports injury treatment
+  - spinal decompression
+  - family chiropractic
+  - back pain treatment
+  - neck pain treatment
+
+conversion_actions:
+  - call
+  - book appointment
+  - request consultation
+  - get directions
+
+important_pages:
+  - homepage
+  - services
+  - appointment
+  - contact
+  - about
+  - reviews
+
+pain_points:
   - key: weak_local_seo
     label: Weak local SEO
-    weight: 25
+    weight: 30
     scan_for:
       - missing_city_keywords
       - weak_title_tag
       - missing_meta_description
-      - missing_schema_markup
+      - missing_localbusiness_schema
+      - missing_chiropractor_schema
+      - missing_google_map
+      - no_location_page
+      - no_service_area_terms
 
   - key: poor_conversion
     label: Poor appointment conversion
-    weight: 25
+    weight: 30
     scan_for:
       - no_online_booking
       - phone_number_not_prominent
       - weak_call_to_action
       - contact_form_hard_to_find
+      - no_click_to_call_on_mobile
+      - no_sticky_mobile_cta
+      - appointment_button_below_fold
+
+  - key: slow_mobile_site
+    label: Slow mobile site
+    weight: 20
+    scan_for:
+      - low_mobile_pagespeed
+      - poor_lcp
+      - poor_cls
+      - large_images
+      - render_blocking_scripts
+      - unused_javascript
 
   - key: low_trust
     label: Low trust signals
@@ -52,27 +102,64 @@ pain_points:
       - missing_reviews
       - no_testimonials
       - no_doctor_bio
-      - no_before_after_or_patient_success_content
+      - no_certifications
+      - no_insurance_info
+      - no_patient_success_content
+      - no_conditions_treated_content
 
   - key: technical_issues
     label: Technical website issues
-    weight: 10
+    weight: 5
     scan_for:
       - broken_links
       - missing_ssl
       - mobile_layout_issues
+      - missing_sitemap
+      - missing_robots_txt
       - outdated_cms_signals
+      - accessibility_issues
+
+positive_signals:
+  - online_booking_present
+  - phone_number_above_fold
+  - strong_google_reviews
+  - city_in_title_tag
+  - localbusiness_schema_present
+  - service_pages_present
+  - doctor_bio_present
+  - fast_mobile_site
+
+negative_signals:
+  - no_clear_booking_path
+  - slow_mobile_homepage
+  - no_city_relevance
+  - generic_homepage_title
+  - missing_reviews_or_testimonials
+  - hard_to_find_phone_number
+  - outdated_visual_design
+  - weak_service_page_structure
 
 offer:
   primary_service: Website performance and local SEO audit
+  secondary_services:
+    - mobile speed cleanup
+    - local SEO fixes
+    - appointment conversion improvements
+    - technical SEO cleanup
   pitch_angle: >
     Chiropractors rely heavily on local search and mobile visitors.
-    If the site is slow, hard to navigate, or missing local SEO basics,
-    it can quietly cost appointment requests.
+    If the site is slow, hard to navigate, missing trust signals, or missing
+    local SEO basics, it can quietly cost appointment requests.
 
 scoring:
   min_score_to_save: 60
   min_score_to_email: 80
+  weights:
+    local_seo: 30
+    conversion: 30
+    mobile_speed: 20
+    trust: 15
+    technical: 5
 
 email:
   subject: "Quick website note for {company_name}"
