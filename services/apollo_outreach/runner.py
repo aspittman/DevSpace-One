@@ -7,7 +7,7 @@ from services.apollo_outreach.apollo_client import ApolloClient, normalize_apoll
 from services.apollo_outreach.buyer_profiles import BUYER_PROFILES
 from services.apollo_outreach.csv_loader import read_csv, write_csv
 from services.apollo_outreach.domain_analyzer import detect_domain_angle
-from services.apollo_outreach.email_writer import build_subject, build_email
+from services.apollo_outreach.email_writer import build_subject_for_lead, build_email
 from services.apollo_outreach.lead_scorer import score_lead
 from services.apollo_outreach.adapter import outreach_result_to_crm_payload
 from services.apollo_outreach.responses import RESPONSES_FILE, sync_responses
@@ -285,6 +285,27 @@ def lead_email(lead: dict) -> str:
     return email
 
 
+def merge_enriched_person(lead: dict, enriched_person: dict | None) -> dict:
+    if not enriched_person:
+        return lead
+
+    enriched = normalize_apollo_person(
+        enriched_person,
+        keyword=lead.get("keywords") or lead.get("_apollo_keyword"),
+    )
+    merged = {**lead}
+
+    for key, value in enriched.items():
+        if value:
+            merged[key] = value
+
+    merged["apollo_raw"] = {
+        "search": lead.get("apollo_raw"),
+        "enrichment": enriched_person,
+    }
+    return merged
+
+
 def run(organization_id: str, niche: str | None = None, signals=None, config=None):
     config = config or {}
     organization_id = organization_id or os.getenv("APOLLO_OUTREACH_ORG_ID")
@@ -322,31 +343,69 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
     draft_rows = []
     seen_leads = set()
     skipped_without_email = 0
-    minimum_score = int(config.get("minimum_score", 50))
+    enrichment_attempts = 0
+    enrichment_limit_reached = 0
+    minimum_score = int(config.get("minimum_score", 70))
     max_ingests = int(config.get("max_ingests", 50))
+    enrich_missing_emails = as_bool(config.get("enrich_missing_emails"), default=True)
+    max_email_enrichments = int(config.get("max_email_enrichments", 10))
+    enrichment_minimum_score = int(
+        config.get("enrichment_minimum_score", max(0, minimum_score - 20))
+    )
+    apollo_client = None
+
+    if enrich_missing_emails and os.getenv("APOLLO_API_KEY") and max_email_enrichments > 0:
+        apollo_client = ApolloClient(
+            base_url=config.get("apollo_base_url"),
+        )
 
     for lead in leads:
         email = lead_email(lead)
-
-        if not email:
-            skipped_without_email += 1
-            continue
 
         key = lead_key(lead)
 
         if key in seen_leads:
             continue
 
-        seen_leads.add(key)
         domain_offer, score, reasons = best_domain_match(lead, domains)
 
         if not domain_offer:
             continue
 
+        if not email and apollo_client and score >= enrichment_minimum_score:
+            if enrichment_attempts < max_email_enrichments:
+                enriched_person = apollo_client.enrich_person(
+                    lead,
+                    reveal_personal_emails=as_bool(
+                        config.get("reveal_personal_emails"),
+                        default=False,
+                    ),
+                    run_waterfall_email=as_bool(
+                        config.get("run_waterfall_email"),
+                        default=False,
+                    ),
+                )
+                enrichment_attempts += 1
+                lead = merge_enriched_person(lead, enriched_person)
+                email = lead_email(lead)
+                domain_offer, score, reasons = best_domain_match(lead, domains)
+                key = lead_key(lead)
+            else:
+                enrichment_limit_reached += 1
+
+        if not email:
+            skipped_without_email += 1
+            continue
+
+        if key in seen_leads:
+            continue
+
+        seen_leads.add(key)
+
         if score < minimum_score:
             continue
 
-        subject = build_subject(domain_offer)
+        subject = build_subject_for_lead(lead, domain_offer)
         body = build_email(lead, domain_offer)
 
         scored_rows.append({
@@ -420,5 +479,7 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
     print(f"Scored leads saved to {SCORED_OUTPUT}")
     print(f"Email drafts saved to {DRAFTS_OUTPUT}")
     print(f"Sent {len(scored_rows)} Apollo Outreach leads to CRM")
+    print(f"Attempted {enrichment_attempts} Apollo email enrichments")
+    print(f"Skipped {enrichment_limit_reached} qualifying Apollo leads after hitting the enrichment limit")
     print(f"Skipped {skipped_without_email} Apollo leads without a valid email")
     print(f"Synced {responses_synced} Apollo Outreach responses to CRM")

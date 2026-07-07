@@ -47,17 +47,64 @@ def score_prospect(prospect: dict, niche_config: dict) -> tuple[int, list[dict]]
         if matched_scan_keys:
             weight = int(pain_point.get("weight", 0))
             score += weight
+            findings = [
+                finding
+                for finding in prospect.get("audit", {}).get("findings", [])
+                if finding.get("key") in matched_scan_keys
+            ]
             matched.append({
                 "key": pain_point.get("key"),
                 "label": pain_point.get("label"),
                 "weight": weight,
                 "matched_signals": matched_scan_keys,
+                "findings": findings,
             })
 
     if explicit_score is not None:
         score = max(score, clamp_score(explicit_score))
 
     return clamp_score(score), matched
+
+
+def top_specific_findings(prospect: dict, limit: int = 3) -> list[dict]:
+    findings = prospect.get("audit", {}).get("findings") or prospect.get("findings") or []
+
+    if not isinstance(findings, list):
+        return []
+
+    priority = {
+        "conversion": 0,
+        "local_seo": 1,
+        "trust": 2,
+        "performance": 3,
+        "technical": 4,
+    }
+    evidence_backed = [
+        finding
+        for finding in findings
+        if isinstance(finding, dict)
+        and finding.get("status", "weakness") == "weakness"
+        and finding.get("evidence")
+        and finding.get("label")
+    ]
+
+    return sorted(
+        evidence_backed,
+        key=lambda finding: (
+            priority.get(finding.get("category"), 99),
+            str(finding.get("label", "")),
+        ),
+    )[:limit]
+
+
+def finding_email_phrase(finding: dict) -> str:
+    label = str(finding.get("label") or "website issue").lower()
+    evidence = str(finding.get("evidence") or "").strip().rstrip(".")
+
+    if evidence:
+        return f"{label}: {evidence}"
+
+    return label
 
 
 def render_email(niche_config: dict, prospect: dict) -> tuple[str, str]:
@@ -76,11 +123,28 @@ def render_email(niche_config: dict, prospect: dict) -> tuple[str, str]:
     }
 
     subject = (email.get("subject") or "Quick website note for {company_name}").format(**values)
-    body_parts = [
-        email.get("opening", "").format(**values),
-        email.get("value_prop", "").format(**values),
-        email.get("call_to_action", "").format(**values),
-    ]
+    findings = top_specific_findings(prospect, limit=3)
+
+    if findings:
+        examples = [finding_email_phrase(finding) for finding in findings[:2]]
+        finding_sentence = "; and ".join(examples)
+        body_parts = [
+            (
+                f"I noticed a couple of fixable website issues on {company_name}'s site "
+                f"that may be costing appointment requests. For example, {finding_sentence}."
+            ),
+            (
+                "These are the kinds of local SEO and appointment-conversion gaps "
+                "that can make it harder for nearby patients to find the clinic and book."
+            ),
+            email.get("call_to_action", "").format(**values),
+        ]
+    else:
+        body_parts = [
+            email.get("opening", "").format(**values),
+            email.get("value_prop", "").format(**values),
+            email.get("call_to_action", "").format(**values),
+        ]
     body = "\n\n".join(part.strip() for part in body_parts if part and part.strip())
 
     return subject, body

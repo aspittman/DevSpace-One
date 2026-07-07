@@ -42,6 +42,36 @@ def _contact(prospect: dict) -> dict | None:
     }
 
 
+def _detailed_findings(prospect: dict) -> list[dict]:
+    findings = prospect.get("audit", {}).get("findings") or prospect.get("findings") or []
+
+    if not isinstance(findings, list):
+        return []
+
+    return [
+        finding
+        for finding in findings
+        if isinstance(finding, dict)
+        and finding.get("status", "weakness") == "weakness"
+        and finding.get("label")
+        and finding.get("evidence")
+    ]
+
+
+def _finding_note(finding: dict) -> str:
+    return " | ".join(
+        part
+        for part in [
+            finding.get("label"),
+            f"Where: {finding.get('location')}" if finding.get("location") else "",
+            f"Evidence: {finding.get('evidence')}" if finding.get("evidence") else "",
+            f"Recommended fix: {finding.get('recommendation')}" if finding.get("recommendation") else "",
+            f"Business impact: {finding.get('business_impact')}" if finding.get("business_impact") else "",
+        ]
+        if part
+    )
+
+
 def outreach_audit_to_crm_payload(
     organization_id: str,
     niche_config: dict,
@@ -54,7 +84,12 @@ def outreach_audit_to_crm_payload(
     company_name = _company_name(prospect)
     website = _website(prospect)
     niche_key = niche_config["key"]
-    pain_labels = [point["label"] for point in matched_pain_points]
+    detailed_findings = _detailed_findings(prospect)
+    finding_notes = [_finding_note(finding) for finding in detailed_findings]
+    pain_labels = [
+        finding["label"]
+        for finding in detailed_findings
+    ]
 
     return {
         "organization_id": organization_id,
@@ -67,19 +102,22 @@ def outreach_audit_to_crm_payload(
         },
         "contact": _contact(prospect),
         "lead": {
-            "lead_type": "local_business_website_audit",
+            "lead_type": "website_outreach",
             "title": f"{company_name} - {niche_config.get('label', niche_key)} website audit",
             "status": "drafted",
             "score": score,
             "summary": f"Drafted website audit outreach for {company_name}.",
-            "notes": "; ".join(pain_labels),
+            "notes": "\n".join(finding_notes) if finding_notes else "; ".join(pain_labels),
             "pain_points": pain_labels,
+            "findings": detailed_findings,
         },
         "metadata": {
             "niche": niche_key,
             "location": prospect.get("location") or "",
             "website": website,
             "audit": prospect.get("audit"),
+            "detailed_findings": detailed_findings,
+            "finding_notes": finding_notes,
             "outreach_status": "drafted",
             "outcome": "pending",
             "email_subject": subject,

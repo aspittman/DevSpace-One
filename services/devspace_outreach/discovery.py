@@ -21,6 +21,8 @@ DEFAULT_BLOCKED_DOMAINS = {
     "bbb.org",
 }
 
+DEFAULT_SERPAPI_CREDIT_LIMIT = 10
+
 
 def as_list(value):
     if not value:
@@ -228,6 +230,11 @@ def search_query(query: str, count: int, config: dict) -> list[dict]:
     raise ValueError(f"Unsupported search provider: {provider}")
 
 
+def serpapi_credit_limit(config: dict) -> int:
+    configured_limit = int(config.get("serpapi_credit_limit", DEFAULT_SERPAPI_CREDIT_LIMIT))
+    return max(0, min(DEFAULT_SERPAPI_CREDIT_LIMIT, configured_limit))
+
+
 def discover_prospects(niche_config: dict, config: dict) -> list[dict]:
     search_config = niche_config.get("search", {})
     queries = as_list(config.get("queries")) or as_list(search_config.get("queries"))
@@ -239,15 +246,25 @@ def discover_prospects(niche_config: dict, config: dict) -> list[dict]:
     )
     prospects = []
     seen = set()
+    provider = _provider(config)
+    serpapi_searches_used = 0
+    serpapi_search_limit = serpapi_credit_limit(config) if provider == "serpapi" else 0
 
     if not queries or not locations:
         return prospects
 
     for location in locations:
         for template in queries:
-            query = template.format(location=location)
+            if provider == "serpapi" and serpapi_searches_used >= serpapi_search_limit:
+                return prospects
 
-            for result in search_query(query, results_per_query, config):
+            query = template.format(location=location)
+            results = search_query(query, results_per_query, config)
+
+            if provider == "serpapi":
+                serpapi_searches_used += 1
+
+            for result in results:
                 url = clean_url(result.get("url") or "")
 
                 if not url or is_blocked_url(url, blocked_domains):
@@ -266,7 +283,7 @@ def discover_prospects(niche_config: dict, config: dict) -> list[dict]:
                     "search_query": query,
                     "search_title": result.get("title", ""),
                     "search_snippet": result.get("snippet", ""),
-                    "discovery_source": _provider(config),
+                    "discovery_source": provider,
                 })
 
                 if len(prospects) >= max_prospects:

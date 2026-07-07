@@ -1,39 +1,57 @@
-from services.apollo_outreach.domain_analyzer import detect_domain_angle
+def _lead_value(lead: dict, *keys: str) -> str:
+    for key in keys:
+        value = str(lead.get(key) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _domain_url(domain: str) -> str:
+    domain = str(domain or "").strip()
+    if domain.startswith(("http://", "https://")):
+        return domain
+    return f"https://{domain}"
 
 
 def build_subject(domain_offer: dict) -> str:
     domain = domain_offer["domain"]
-    angle = detect_domain_angle(domain)
+    return f"Domain opportunity: {domain}"
 
-    if angle == "commercial_loans":
-        return f"Commercial finance domain: {domain}"
 
-    if angle == "equipment_financing":
-        return f"Equipment financing domain: {domain}"
+def build_subject_for_lead(lead: dict, domain_offer: dict) -> str:
+    company = _lead_value(lead, "company", "Company")
 
-    if angle == "business_funding":
-        return f"Business funding domain: {domain}"
+    if company:
+        return f"Domain opportunity for {company}"
 
-    return f"Domain idea: {domain}"
+    return build_subject(domain_offer)
 
 
 def build_email(lead: dict, domain_offer: dict) -> str:
-    first_name = lead.get("first_name") or lead.get("First Name") or ""
-    company = lead.get("company") or lead.get("Company") or "your company"
+    first_name = _lead_value(lead, "first_name", "First Name")
+    company = _lead_value(lead, "company", "Company") or "your company"
     domain = domain_offer["domain"]
-    price = domain_offer.get("ask_price", "299")
+    url = _domain_url(domain)
 
     greeting = f"Hi {first_name}," if first_name else "Hi,"
 
     return f"""{greeting}
 
-I came across {company} and thought {domain} could be a strong fit for a lending, funding, or commercial finance brand.
+I noticed {company} focuses on helping businesses find financing, and I thought {domain} would be a strong fit for your brand.
 
-The name is direct, easy to understand, and tied to people already searching for funding options.
+The name is easy to remember, clearly communicates what you do, and closely matches the kinds of search terms potential customers already use when looking for lending services.
 
-I currently own {domain} and would be open to selling it for ${price}.
+I own the domain, and it's currently listed for sale through Afternic, one of the largest domain marketplaces. You can view the listing by visiting:
 
-No pressure either way — just thought it could be useful for a future campaign, landing page, or brand asset.
+{url}
 
-Thanks,
-Aaron"""
+If the domain is a good fit for your plans, the landing page will guide you through the purchase process.
+
+I'm reaching out to a small number of companies that seem like a natural fit before marketing it more broadly.
+
+If you have any questions, or if you'd like to discuss the domain directly, feel free to reply to this email.
+
+Best,
+
+Aaron Pittman
+DevSpace Technologies"""

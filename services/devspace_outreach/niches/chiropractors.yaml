@@ -64,6 +64,8 @@ pain_points:
     weight: 30
     scan_for:
       - missing_city_keywords
+      - missing_service_keyword_in_title
+      - missing_service_keywords
       - weak_title_tag
       - missing_meta_description
       - missing_localbusiness_schema
