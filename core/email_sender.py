@@ -11,6 +11,7 @@ def send_email(to_email: str, subject: str, body: str):
     smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_USERNAME")
     smtp_password = os.getenv("SMTP_PASSWORD")
     from_name = os.getenv("FROM_NAME", "DevSpace One")
+    from_email = os.getenv("FROM_EMAIL") or smtp_user
 
     if not email_enabled:
         print("EMAIL DISABLED - Preview only")
@@ -29,7 +30,7 @@ def send_email(to_email: str, subject: str, body: str):
         raise ValueError("ALERT_TO_EMAIL / to_email is missing")
 
     msg = EmailMessage()
-    msg["From"] = f"{from_name} <{smtp_user}>"
+    msg["From"] = f"{from_name} <{from_email}>"
     msg["To"] = to_email
     msg["Subject"] = subject
     msg.set_content(body)

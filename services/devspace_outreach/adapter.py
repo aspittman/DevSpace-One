@@ -1,3 +1,6 @@
+from urllib.parse import urlparse
+
+
 def _company_name(prospect: dict) -> str:
     return (
         prospect.get("company_name")
@@ -10,6 +13,13 @@ def _company_name(prospect: dict) -> str:
 
 def _website(prospect: dict) -> str:
     return prospect.get("website") or prospect.get("url") or prospect.get("domain") or ""
+
+
+def _domain(prospect: dict) -> str:
+    website = _website(prospect)
+    parsed = urlparse(website)
+    host = parsed.netloc or parsed.path
+    return host.lower().removeprefix("www.")
 
 
 def _contact(prospect: dict) -> dict | None:
@@ -83,6 +93,7 @@ def outreach_audit_to_crm_payload(
 ) -> dict:
     company_name = _company_name(prospect)
     website = _website(prospect)
+    domain = _domain(prospect)
     niche_key = niche_config["key"]
     detailed_findings = _detailed_findings(prospect)
     finding_notes = [_finding_note(finding) for finding in detailed_findings]
@@ -97,7 +108,7 @@ def outreach_audit_to_crm_payload(
         "company": {
             "name": company_name,
             "website": website,
-            "domain": website,
+            "domain": domain,
             "industry": niche_key,
         },
         "contact": _contact(prospect),
@@ -115,6 +126,7 @@ def outreach_audit_to_crm_payload(
             "niche": niche_key,
             "location": prospect.get("location") or "",
             "website": website,
+            "domain": domain,
             "audit": prospect.get("audit"),
             "detailed_findings": detailed_findings,
             "finding_notes": finding_notes,

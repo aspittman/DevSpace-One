@@ -2,6 +2,7 @@ import os
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import requests
+from requests.exceptions import RequestException
 
 
 DEFAULT_BLOCKED_DOMAINS = {
@@ -258,11 +259,16 @@ def discover_prospects(niche_config: dict, config: dict) -> list[dict]:
             if provider == "serpapi" and serpapi_searches_used >= serpapi_search_limit:
                 return prospects
 
-            query = template.format(location=location)
-            results = search_query(query, results_per_query, config)
-
             if provider == "serpapi":
                 serpapi_searches_used += 1
+
+            query = template.format(location=location)
+
+            try:
+                results = search_query(query, results_per_query, config)
+            except RequestException as exc:
+                print(f"Search skipped for {provider} query {query!r}: {exc}")
+                continue
 
             for result in results:
                 url = clean_url(result.get("url") or "")

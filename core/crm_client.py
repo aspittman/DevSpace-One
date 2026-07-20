@@ -96,3 +96,19 @@ class CRMClient:
             params["domain"] = domain
 
         return self._get("/api/bot/outreach-performance", params=params)
+
+    def get_approved_outreach(self, organization_id=None):
+        params = {}
+
+        if organization_id:
+            params["organization_id"] = organization_id
+
+        return self._get("/api/bot/approved-outreach", params=params)
+
+    def mark_outreach_sent(self, outreach_id, organization_id=None):
+        payload = {"outreach_id": outreach_id}
+
+        if organization_id:
+            payload["organization_id"] = organization_id
+
+        return self._post("/api/bot/outreach-sent", payload)

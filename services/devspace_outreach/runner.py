@@ -253,9 +253,12 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
 
     crm = CRMClient()
     sent_to_crm = 0
+    existing_updated = 0
+    update_existing_clients = as_bool(config.get("update_existing_clients"), default=True)
 
     for result in selected:
         domain = website_domain(result["prospect"])
+        exists_response = {}
 
         if domain:
             exists_response = crm.domain_exists(
@@ -263,7 +266,7 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
                 domain=domain,
             )
 
-            if exists_response.get("exists"):
+            if exists_response.get("exists") and not update_existing_clients:
                 print(f"Skipping duplicate website: {domain}")
                 continue
 
@@ -277,10 +280,22 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
             body=result["body"],
         )
 
+        if exists_response.get("exists"):
+            payload["ingest_mode"] = "update_existing"
+            payload["metadata"]["ingest_mode"] = "update_existing"
+            payload["metadata"]["existing_client"] = True
+            payload["metadata"]["existing_match"] = exists_response
+
         crm.ingest_lead(payload)
         sent_to_crm += 1
 
         company_name = payload["company"]["name"] or payload["company"]["website"]
-        print(f"Sent to CRM: {company_name} | Score: {result['score']}")
+        if exists_response.get("exists"):
+            existing_updated += 1
+            print(f"Updated CRM: {company_name} | Score: {result['score']}")
+        else:
+            print(f"Sent to CRM: {company_name} | Score: {result['score']}")
 
     print(f"Sent {sent_to_crm} Devspace Outreach leads to CRM")
+    if existing_updated:
+        print(f"Existing CRM clients refreshed: {existing_updated}")

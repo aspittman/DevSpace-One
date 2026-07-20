@@ -32,11 +32,14 @@ The `serpapi_credit_limit` service config may lower the cap for smaller runs, bu
   "max_prospects": 25,
   "max_ingests": 10,
   "min_score_to_save": 60,
+  "update_existing_clients": true,
   "dry_run": true
 }
 ```
 
 Set `dry_run` to `false` after reviewing the console output from a test run.
+Set `update_existing_clients` to `false` if existing CRM websites should be skipped
+instead of refreshed through `/api/ingest`.
 
 ## Audit findings payload
 

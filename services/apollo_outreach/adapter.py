@@ -101,6 +101,7 @@ def outreach_result_to_crm_payload(
             "domain": domain,
             "ask_price": ask_price,
             "outreach_status": "drafted",
+            "email_to": email,
             "outcome": "pending",
             "purchase_intent": None,
             "response_status": None,

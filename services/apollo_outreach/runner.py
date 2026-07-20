@@ -18,6 +18,7 @@ DOMAINS_FILE = DATA_DIR / "domains.csv"
 APOLLO_EXPORT_FILE = DATA_DIR / "apollo_export.csv"
 SCORED_OUTPUT = DATA_DIR / "scored_leads.csv"
 DRAFTS_OUTPUT = DATA_DIR / "email_drafts.csv"
+MAX_CRM_DRAFTS_PER_RUN = 5
 
 
 DEFAULT_TITLES = [
@@ -346,7 +347,10 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
     enrichment_attempts = 0
     enrichment_limit_reached = 0
     minimum_score = int(config.get("minimum_score", 70))
-    max_ingests = int(config.get("max_ingests", 50))
+    # Apollo outreach is a review-first workflow. A run may create fewer drafts
+    # when too few leads qualify, but it must never flood the CRM with more than
+    # five new drafts.
+    max_ingests = MAX_CRM_DRAFTS_PER_RUN
     enrich_missing_emails = as_bool(config.get("enrich_missing_emails"), default=True)
     max_email_enrichments = int(config.get("max_email_enrichments", 10))
     enrichment_minimum_score = int(
@@ -478,7 +482,7 @@ def run(organization_id: str, niche: str | None = None, signals=None, config=Non
 
     print(f"Scored leads saved to {SCORED_OUTPUT}")
     print(f"Email drafts saved to {DRAFTS_OUTPUT}")
-    print(f"Sent {len(scored_rows)} Apollo Outreach leads to CRM")
+    print(f"Created {len(scored_rows)} Apollo Outreach drafts in CRM")
     print(f"Attempted {enrichment_attempts} Apollo email enrichments")
     print(f"Skipped {enrichment_limit_reached} qualifying Apollo leads after hitting the enrichment limit")
     print(f"Skipped {skipped_without_email} Apollo leads without a valid email")

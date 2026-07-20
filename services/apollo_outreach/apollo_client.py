@@ -169,10 +169,11 @@ def normalize_apollo_person(person: dict[str, Any], keyword: str | None = None) 
         or ""
     )
 
+    # Do not include ``keyword`` here. It is the query that found the person, not
+    # independent evidence that their organization matches the query.
     keywords = " ".join(
         str(value)
         for value in [
-            keyword,
             organization.get("industry"),
             organization.get("short_description"),
             organization.get("seo_description"),
@@ -194,6 +195,7 @@ def normalize_apollo_person(person: dict[str, Any], keyword: str | None = None) 
             person.get("emails"),
         ),
         "email_status": person.get("email_status") or "",
+        "apollo_search_keyword": keyword or "",
         "company": company,
         "website": website,
         "industry": organization.get("industry") or "",
@@ -201,6 +203,11 @@ def normalize_apollo_person(person: dict[str, Any], keyword: str | None = None) 
         "city": person.get("city") or "",
         "state": person.get("state") or "",
         "country": person.get("country") or "",
+        "employee_count": (
+            organization.get("estimated_num_employees")
+            or organization.get("employee_count")
+            or ""
+        ),
         "keywords": keywords,
         "apollo_raw": person,
     }
